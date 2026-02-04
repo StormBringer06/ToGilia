@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>💐 For You</title>
+  <style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #fff1f5, #ffe4ec);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .container {
+    text-align: center;
+  }
+
+  h1 {
+    margin-bottom: 20px;
+    color: #7a1c44;
+    font-size: 1.4rem;
+    position: relative;
+    z-index: 6; /* ensure heading stays in front */
+  }
+
+  .flower {
+    position: relative;
+    width: 240px;
+    height: 240px;
+    margin: 0 auto;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    overflow: visible; /* allow petals to sit outside box */
+  }
+
+  /* Petals are centered and rotated. We use rotate(...) translateY(...) with smaller distances so petals overlap naturally. */
+  .petal {
+    position: absolute;
+    width: 88px;
+    height: 120px;
+    background: var(--petal, #ff4d85);
+    border-radius: 50% 50% 46% 46%;
+    top: 50%;
+    left: 50%;
+    /* pivot slightly below center so rotation looks like unfolding */
+    transform-origin: 50% 70%;
+    transition: transform 0.7s cubic-bezier(.2,.9,.2,1), box-shadow 300ms;
+    /* base: centered then rotated and nudged slightly so petals overlap nicely */
+    transform: translate(-50%,-50%) rotate(0deg) translateY(-6px) scale(1);
+    box-shadow: 0 8px 18px rgba(120,40,80,0.12);
+    z-index: 3; /* petals sit above center */
+  }
+
+  /* place each petal by rotating it around the center; small base translateY keeps them snug */
+  .petal:nth-child(1) { transform: translate(-50%,-50%) rotate(0deg) translateY(-6px); }
+  .petal:nth-child(2) { transform: translate(-50%,-50%) rotate(45deg) translateY(-5px); }
+  .petal:nth-child(3) { transform: translate(-50%,-50%) rotate(90deg) translateY(-6px); }
+  .petal:nth-child(4) { transform: translate(-50%,-50%) rotate(135deg) translateY(-5px); }
+  .petal:nth-child(5) { transform: translate(-50%,-50%) rotate(180deg) translateY(-6px); }
+  .petal:nth-child(6) { transform: translate(-50%,-50%) rotate(225deg) translateY(-5px); }
+  .petal:nth-child(7) { transform: translate(-50%,-50%) rotate(270deg) translateY(-6px); }
+  .petal:nth-child(8) { transform: translate(-50%,-50%) rotate(315deg) translateY(-5px); }
+
+  /* opened state: move petals outward but keep overlap by using moderate translateY and slight scale */
+  .flower.open .petal:nth-child(1) { transform: translate(-50%,-50%) rotate(0deg) translateY(-80px) scale(1.02); }
+  .flower.open .petal:nth-child(2) { transform: translate(-50%,-50%) rotate(45deg) translateY(-78px) scale(1.02); }
+  .flower.open .petal:nth-child(3) { transform: translate(-50%,-50%) rotate(90deg) translateY(-80px) scale(1.02); }
+  .flower.open .petal:nth-child(4) { transform: translate(-50%,-50%) rotate(135deg) translateY(-78px) scale(1.02); }
+  .flower.open .petal:nth-child(5) { transform: translate(-50%,-50%) rotate(180deg) translateY(-80px) scale(1.02); }
+  .flower.open .petal:nth-child(6) { transform: translate(-50%,-50%) rotate(225deg) translateY(-78px) scale(1.02); }
+  .flower.open .petal:nth-child(7) { transform: translate(-50%,-50%) rotate(270deg) translateY(-80px) scale(1.02); }
+  .flower.open .petal:nth-child(8) { transform: translate(-50%,-50%) rotate(315deg) translateY(-78px) scale(1.02); }
+
+  /* CENTER: behind petals when closed, invisible by default. Visible when open. */
+  .center {
+    position: absolute;
+    width: 84px;
+    height: 84px;
+    background: var(--center, #ffd166);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    /* nudge down slightly so it visually centers with petal shapes */
+    transform: translate(-50%, -35%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #7a1c44;
+    z-index: 2; /* behind petals */
+    box-shadow: 0 6px 18px rgba(120,40,80,0.08);
+    border: 6px solid #fff;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 260ms ease, transform 260ms ease;
+  }
+
+  /* When flower opens, reveal (fade in) the center slightly after petals move */
+  .flower.open .center {
+    opacity: 1;
+    transform: translate(-50%, -28%);
+    transition-delay: 120ms;
+  }
+
+  /* YES button - minimal addition: hidden until flower.open */
+  .yes-btn {
+    position: absolute;
+    left: 50%;
+    top: 140%;               /* <-- you said 140 feels perfect */
+    transform: translate(-50%, 0) scale(.96);
+    opacity: 0;
+    pointer-events: none;
+    background: #ff5b9f;
+    color: #fff;
+    border: 0;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(120,40,80,0.12);
+    transition: opacity 200ms ease, transform 300ms cubic-bezier(.2,.9,.2,1);
+    z-index: 14;
+  }
+  .flower.open .yes-btn {
+    opacity: 1;
+    transform: translate(-50%, 0px) scale(1);
+    pointer-events: auto;
+    transition-delay: 160ms;
+  }
+  .yes-btn:disabled { opacity: 0.7; cursor: default; transform: translate(-50%, 0px) scale(.98); }
+
+  /* message rules */
+  .message {
+    margin-top: 18px;
+    font-weight: 800;
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 320ms ease;
+    position: relative;
+    z-index: 10;
+  }
+  .flower.open + .message {
+    opacity: 1;
+  }
+
+  /* YAY popup styling */
+  .yay {
+    position: fixed;
+    pointer-events: none;
+    font-weight: 900;
+    font-size: 20px;
+    color: #ff3b8c;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+    animation: yay-pop 900ms cubic-bezier(.2,.9,.2,1) forwards;
+    z-index: 60;
+    text-shadow: 0 4px 12px rgba(120,40,80,0.12);
+  }
+
+  @keyframes yay-pop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8) translateY(0); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.08) translateY(-6px); }
+    60% { opacity: 1; transform: translate(-50%, -50%) scale(1) translateY(-22px); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.88) translateY(-44px); }
+  }
+
+  /* small responsive tweak */
+  @media (max-width:480px){
+    .flower{ width:200px; height:200px }
+    .petal{ width:76px; height:106px }
+    .center { width: 72px; height: 72px; border-width: 5px; transform: translate(-50%, -40%); }
+    .yes-btn { top: 160%; padding: 7px 12px; }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tap the flower 🌸</h1>
+
+    <div class="flower" id="flower" role="button" tabindex="0" aria-pressed="false" aria-label="Open the flower">
+      <div class="petal"></div>
+      <div class="petal"></div>
+      <div class="petal"></div>
+      <div class="petal"></div>
+      <div class="petal"></div>
+      <div class="petal"></div>
+      <div class="petal"></div>
+      <div class="petal"></div>
+      <div class="center" aria-hidden="true">❤</div>
+
+      <!-- YES button added (appears when flower.open) -->
+      <button id="yesBtn" class="yes-btn" aria-hidden="true">Yes</button>
+    </div>
+
+    <div class="message">Will you be my Valentine?</div>
+    
+  </div>
+
+  <script>
+    const flower = document.getElementById('flower');
+    const yesBtn = document.getElementById('yesBtn');
+    const msg = document.querySelector('.message');
+
+    function toggle() {
+      flower.classList.toggle('open');
+      const isOpen = flower.classList.contains('open');
+      flower.setAttribute('aria-pressed', String(isOpen));
+      // show/hide yes button for assistive tech
+      yesBtn.setAttribute('aria-hidden', String(!isOpen));
+      if (!isOpen) {
+        // reset yes button state when closing
+        yesBtn.disabled = false;
+        yesBtn.textContent = 'Yes';
+      }
+    }
+
+    flower.addEventListener('click', toggle);
+    flower.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+
+    // NEW: yes button spawns "yay" words at random positions across viewport.
+    function spawnYay(x, y, text = 'yay') {
+      const el = document.createElement('div');
+      el.className = 'yay';
+      el.textContent = text;
+      // position at provided x,y (page coordinates) or random across viewport if not provided
+      if (typeof x === 'number' && typeof y === 'number') {
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+      } else {
+        el.style.left = (10 + Math.random() * 80) + 'vw'; // 10% - 90% vw
+        el.style.top = (10 + Math.random() * 80) + 'vh';  // 10% - 90% vh
+      }
+      document.body.appendChild(el);
+      // remove after animation
+      el.addEventListener('animationend', () => el.remove());
+    }
+
+    // on click: spawn a short burst of yay words over a few hundred ms
+    yesBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // <- prevents closing the flower
+      // spawn for 1.6s every ~120ms
+      const duration = 10000;
+      const intervalMS = 120;
+      const end = Date.now() + duration;
+
+      function spawnOnce() {
+        // pick random positions across the viewport for a wider spread
+        const rx = Math.floor(window.innerWidth * (0.1 + Math.random() * 0.8));
+        const ry = Math.floor(window.innerHeight * (0.1 + Math.random() * 0.8));
+        spawnYay(rx, ry, 'YAY!');
+      }
+      spawnOnce(); // immediate pop
+      const id = setInterval(() => {
+        if (Date.now() > end) {
+          clearInterval(id);
+          return;
+        }
+        spawnOnce();
+      }, intervalMS);
+    });
+
+    // keyboard activation for Yes button - same spawning behaviour, do not bubble
+    yesBtn.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && !yesBtn.disabled) {
+        e.preventDefault();
+        e.stopPropagation();
+        yesBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
